@@ -1,0 +1,4 @@
+String url = "http://localhost:8080/DEIISPipeline/services/PrepareData"
+def service = new ServiceClient(url)
+String json = service.getMetadata()
+println groovy.json.JsonOutput.prettyPrint(json)

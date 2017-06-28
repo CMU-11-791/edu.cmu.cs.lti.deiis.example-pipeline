@@ -1,0 +1,24 @@
+String input = '''Q Booth shot Lincoln?
+A 1 Booth shot Lincoln.
+A 0 Lincoln shot Booth.
+A 1 Lincoln was shot by Booth.
+A 0 Booth was shot by Lincoln.
+A 1 Booth assassinated Lincoln.
+A 0 Lincoln assassinated Booth.
+A 1 Lincoln was assassinated by Booth.
+A 0 Booth was assassinated by Lincoln.
+'''
+
+def makeService = { String name ->
+    String url = "http://localhost:8080/DEIISPipeline/services/$name"
+    new ServiceClient(url, 'tester', 'tester')
+}
+
+def prep = makeService('Tokenizer')
+String prepped = new File("src/test/scripts/prepared.json").text
+String json = prep.execute(prepped)
+println groovy.json.JsonOutput.prettyPrint(json)
+return
+
+
+

@@ -1,22 +1,13 @@
 <tool id="deiis.ranker" name="Ranker" version="1.0.0">
-    <description></description>
+    <description>Ranks scored candidate answers</description>
     <command>lsd $__tool_directory__/invoke.lsd Ranker $input $output</command>
     <inputs>
         <param name="input" type="data" format="lif"/>
     </inputs>
     <outputs>
-        <data name="output" format="txt" label="Ranked"/>
+        <data name="output" format="lapps" label="Ranked"/>
     </outputs>
     <help><![CDATA[
-HELP
-====
-
-Required Annotations
---------------------
-
-
-Generated Annotations
----------------------
 
 ]]>
     </help>

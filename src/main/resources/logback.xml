@@ -11,9 +11,9 @@
 		</encoder>
 	</appender>
 
-	<logger name="org.anc" level="info"/>
-	<logger name="edu.cmu.cs.lti.deiis" level="debug"/>
-	<root level="info">
+	<logger name="org.anc" level="error"/>
+	<logger name="edu.cmu.cs.lti.deiis" level="info"/>
+	<root level="warn">
 		<appender-ref ref="STDOUT" />
 	</root>
 </configuration>

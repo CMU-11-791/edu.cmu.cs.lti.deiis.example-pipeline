@@ -1,5 +1,7 @@
 package edu.cmu.cs.lti.deiis.model
 
+import org.lappsgrid.serialization.lif.Annotation
+
 /**
  * @author Keith Suderman
  */
@@ -19,7 +21,7 @@ class NGram {
         }
     }
 
-    List<String> grams = []
+    List<Annotation> grams = []
     Type type
 
     NGram(int size) {
@@ -38,7 +40,7 @@ class NGram {
         return type.n()
     }
 
-    NGram add(String item) {
+    NGram add(Annotation item) {
         if (grams.size() >= type.n()) {
             grams.remove(0)
         }
@@ -46,12 +48,22 @@ class NGram {
         return this
     }
 
-    NGram leftShift(String item) {
+    NGram leftShift(Annotation item) {
         return add(item)
     }
 
     String toString() {
-        grams.join(' ')
+        grams.collect{ it.features.string }.join(' ')
+    }
+
+    Annotation annotate(String id) {
+        int start = grams[0].start
+        int end = grams[-1].end
+        Annotation a = new Annotation(id, Types.NGRAM, start, end)
+        a.features.type = type
+        a.features.text = this.toString()
+        a.label = type.toString()
+        return a
     }
 
     boolean equals(Object object) {

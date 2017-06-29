@@ -23,6 +23,8 @@ class PrepareData extends AbstractAnnotator {
 
     protected ServiceMetadataBuilder configure(ServiceMetadataBuilder builder) {
         builder.name(this.class.name)
+                .requireFormat("text/plain")
+                .produceFormat(Uri.LIF)
         return builder
     }
 

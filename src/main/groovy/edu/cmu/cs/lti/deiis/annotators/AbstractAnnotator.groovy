@@ -31,8 +31,6 @@ abstract class AbstractAnnotator implements WebService {
                 .license(Uri.APACHE2)
                 .allow(Uri.ANY)
                 .vendor("https://www.lti.cs.cmu.edu")
-                .requireFormat(Uri.LIF)
-                .produceFormat(Uri.LIF)
                 .build()
             Data data = new Data(Uri.META, md)
             metadata = data.asPrettyJson()

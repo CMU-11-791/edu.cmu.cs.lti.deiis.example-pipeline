@@ -30,14 +30,12 @@ class Main {
         pipeline << new NGramScorer(type)
         pipeline << new Ranker(type.toString())
         pipeline << new Evaluator(2)
-        String json = pipeline.execute(stream.text)
-        println json
-//        Data data = Serializer.parse(json, Data)
-//        if (data.discriminator == Uri.LIF) {
-//            println groovy.json.JsonOutput.prettyPrint(json)
-//        }
-//        else {
-//            println data.payload
-//        }
+        String text = pipeline.execute(stream.text)
+        if (text.startsWith("{")) {
+            println groovy.json.JsonOutput.prettyPrint(text)
+        }
+        else {
+            println text
+        }
     }
 }

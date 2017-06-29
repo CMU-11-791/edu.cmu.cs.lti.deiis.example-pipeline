@@ -21,7 +21,9 @@ class Tokenizer extends AbstractAnnotator {
 
     protected ServiceMetadataBuilder configure(ServiceMetadataBuilder builder) {
         builder.name(this.class.name)
-            .produce(Uri.TOKEN)
+                .requireFormat(Uri.LIF)
+                .produceFormat(Uri.LIF)
+                .produce(Uri.TOKEN)
         return builder
     }
 

@@ -3,6 +3,7 @@ package edu.cmu.cs.lti.deiis.scoring
 import edu.cmu.cs.lti.deiis.annotators.AbstractAnnotator
 import edu.cmu.cs.lti.deiis.model.Types
 import groovy.util.logging.Slf4j
+import org.lappsgrid.discriminator.Discriminators
 import org.lappsgrid.metadata.ServiceMetadataBuilder
 import org.lappsgrid.serialization.Data
 import org.lappsgrid.serialization.Serializer
@@ -27,6 +28,8 @@ class Evaluator extends AbstractAnnotator {
 
     protected ServiceMetadataBuilder configure(ServiceMetadataBuilder builder) {
         builder.name(this.class.name)
+                .requireFormat(Discriminators.Uri.LIF)
+                .produceFormat(Discriminators.Uri.CSV)
         return builder
     }
 

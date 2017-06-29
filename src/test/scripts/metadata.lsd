@@ -1,3 +1,4 @@
+// Assumes the war file is running locally (e.g. in a Docker container)
 String url = "http://localhost:8080/DEIISPipeline/services/PrepareData"
 def service = new ServiceClient(url)
 String json = service.getMetadata()

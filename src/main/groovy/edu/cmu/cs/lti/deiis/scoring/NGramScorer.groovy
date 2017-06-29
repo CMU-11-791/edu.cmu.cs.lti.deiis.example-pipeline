@@ -4,6 +4,7 @@ import edu.cmu.cs.lti.deiis.annotators.AbstractAnnotator
 import edu.cmu.cs.lti.deiis.error.StateError
 import edu.cmu.cs.lti.deiis.model.NGram
 import edu.cmu.cs.lti.deiis.model.Types
+import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.lappsgrid.metadata.ServiceMetadataBuilder
 import org.lappsgrid.serialization.Data
@@ -24,7 +25,6 @@ class NGramScorer extends AbstractAnnotator {
 
     public NGramScorer() {
         super(NGramScorer.class)
-//        this.type = NGram.Type.BIGRAM
     }
 
     public NGramScorer(NGram.Type type) {
@@ -34,6 +34,9 @@ class NGramScorer extends AbstractAnnotator {
 
     protected ServiceMetadataBuilder configure(ServiceMetadataBuilder builder) {
         builder.name(this.class.name)
+                .produce(Types.SCORE)
+                .requireFormat(Uri.LIF)
+                .produceFormat(Uri.LIF)
         return builder
     }
 
@@ -46,7 +49,7 @@ class NGramScorer extends AbstractAnnotator {
             return unsupported(data.discriminator)
         }
         if (data.parameters?.type) {
-            type = NGram.Type.valueOf(data.parameters.type)
+            type = NGram.Type.valueOf((String)data.parameters.type)
         }
         if (type == null) {
             return error("The type of NGram to score has not been selected.")
@@ -65,32 +68,38 @@ class NGramScorer extends AbstractAnnotator {
     }
 
     protected String process(Container container) throws StateError {
-        View qaView = findView(container, Types.QUESTION)
-        Annotation question = qaView.annotations.find { it.atType == Types.QUESTION }
-        List<String> inQuestion = question.features[type.toString()].ngrams
+        List<Annotation> ngrams = findAnnotations(container, Types.NGRAM)
 
-        View answerView = findView(container, Types.ANSWER)
-        List<Annotation> answers = answerView.annotations.findAll { it.atType == Types.ANSWER }
+        List<Annotation> list = findAnnotations(container, Types.QUESTION)
+        List<String> question = getNgrams(list[0], ngrams)
+
+        List<Annotation> answers = findAnnotations(container, Types.ANSWER)
         answers.each { Annotation answer ->
             logger.debug("Scoring answer {}", answer.id)
-            int score = 0
-            answer.features[type.toString()].ngrams.each { String ngram ->
-                if (inQuestion.contains(ngram)) {
-                    ++score
-                }
-            }
-            double value = score / inQuestion.size()
-            answer.features.score = value //score / inQuestion.size()
+
+            answer.features.score = score(question, answer, ngrams)
             logger.debug("Type {} Score {}", type, answer.features.score)
         }
         return new Data(Uri.LIF, container).asPrettyJson()
     }
 
-    protected View findView(Container container, String type) {
-        List<View> views = container.findViewsThatContain(type)
-        if (views == null || views.size() == 0) {
-            throw new StateError("No views of type $type found.")
+    protected List<String> getNgrams(Annotation span, List<Annotation> annotations) {
+        return (List<String>) annotations.findAll { span.start <= it.start && it.end <= span.end }.collect { it.features.text }
+    }
+
+    protected float score(List<String> question, Annotation answer, List<Annotation> ngrams) {
+        int count = 0
+        List<String> answerNgrams = getNgrams(answer, ngrams)
+        answerNgrams.each { String ngram ->
+            if (question.contains(ngram)) {
+                ++count
+            }
         }
-        return views[0]
+        return answer.features.score = count / question.size()
+    }
+
+    protected List<Annotation> findAnnotations(Container container, String type) {
+        View view = container.views.find { it.metadata.contains[type] }
+        return view.annotations.findAll { it.atType == type }
     }
 }

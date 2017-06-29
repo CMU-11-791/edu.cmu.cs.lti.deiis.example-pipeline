@@ -1,3 +1,5 @@
+// Assumes the war file is running locally (e.g. in a Docker container)
+
 String input = '''Q Booth shot Lincoln?
 A 1 Booth shot Lincoln.
 A 0 Lincoln shot Booth.

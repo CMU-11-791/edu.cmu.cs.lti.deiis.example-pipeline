@@ -1,10 +1,26 @@
+/*
+ * Copyright (c) 2017. Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package edu.cmu.cs.lti.deiis.scoring
 
-import edu.cmu.cs.lti.deiis.annotators.AbstractAnnotator
+import edu.cmu.cs.lti.deiis.annotators.AbstractService
 import edu.cmu.cs.lti.deiis.error.StateError
 import edu.cmu.cs.lti.deiis.model.NGram
 import edu.cmu.cs.lti.deiis.model.Types
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.lappsgrid.metadata.ServiceMetadataBuilder
 import org.lappsgrid.serialization.Data
@@ -15,11 +31,8 @@ import org.lappsgrid.serialization.lif.View
 
 import static org.lappsgrid.discriminator.Discriminators.*
 
-/**
- * @author Keith Suderman
- */
 @Slf4j("logger")
-class NGramScorer extends AbstractAnnotator {
+class NGramScorer extends AbstractService {
 
     NGram.Type type
 
@@ -33,11 +46,10 @@ class NGramScorer extends AbstractAnnotator {
     }
 
     protected ServiceMetadataBuilder configure(ServiceMetadataBuilder builder) {
-        builder.name(this.class.name)
-                .produce(Types.SCORE)
-                .requireFormat(Uri.LIF)
-                .produceFormat(Uri.LIF)
         return builder
+                .name(this.class.name)
+                .produce(Types.SCORE)
+                .require(Types.NGRAM)
     }
 
     String execute(String input) {
@@ -58,16 +70,18 @@ class NGramScorer extends AbstractAnnotator {
         String json
         Container container = new Container((Map) data.payload)
         try {
-            json = process(container)
+            Map parameters = data.parameters
+            data = process(container)
+            data.parameters = parameters
         }
         catch(StateError e) {
             return error(e.message)
         }
 
-        return json
+        return data.asPrettyJson()
     }
 
-    protected String process(Container container) throws StateError {
+    protected Data process(Container container) throws StateError {
         List<Annotation> ngrams = findAnnotations(container, Types.NGRAM)
 
         List<Annotation> list = findAnnotations(container, Types.QUESTION)
@@ -75,12 +89,14 @@ class NGramScorer extends AbstractAnnotator {
 
         List<Annotation> answers = findAnnotations(container, Types.ANSWER)
         answers.each { Annotation answer ->
-            logger.debug("Scoring answer {}", answer.id)
-
-            answer.features.score = score(question, answer, ngrams)
-            logger.debug("Type {} Score {}", type, answer.features.score)
+            if (answer.features.score == null) {
+                answer.features.score = 0.0f
+            }
+//            answer.features.score += score(question, answer, ngrams)
+            score(question, answer, ngrams)
+            logger.info("Answer {} Score {}", answer.id, answer.features.score)
         }
-        return new Data(Uri.LIF, container).asPrettyJson()
+        return new Data(Uri.LIF, container) //.asPrettyJson()
     }
 
     protected List<String> getNgrams(Annotation span, List<Annotation> annotations) {
@@ -88,13 +104,16 @@ class NGramScorer extends AbstractAnnotator {
     }
 
     protected float score(List<String> question, Annotation answer, List<Annotation> ngrams) {
+        logger.trace("Answer Text: {}", answer.features.text)
         int count = 0
         List<String> answerNgrams = getNgrams(answer, ngrams)
         answerNgrams.each { String ngram ->
             if (question.contains(ngram)) {
+                logger.trace("Overlap: {}", ngram)
                 ++count
             }
         }
+        logger.debug("Answer ${answer.id} : {} out of {}", count, question.size())
         return answer.features.score = count / question.size()
     }
 

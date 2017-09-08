@@ -1,4 +1,7 @@
-// Assumes the war file is running locally (e.g. in a Docker container)
+#!/usr/bin/env lsd
+
+// Assumes the war file is running on localhost:8080 (e.g. in a Docker container) and
+// that the user has LSD installed on the $PATH somewhere.
 
 String input = '''Q Booth shot Lincoln?
 A 1 Booth shot Lincoln.
@@ -11,16 +14,57 @@ A 1 Lincoln was assassinated by Booth.
 A 0 Booth was assassinated by Lincoln.
 '''
 
+// A closure to create a service client given just the service name.
 def makeService = { String name ->
     String url = "http://localhost:8080/DEIISPipeline/services/$name"
-    new ServiceClient(url, 'tester', 'tester')
+    new ServiceClient(url)
 }
 
-def prep = makeService('Tokenizer')
-String prepped = new File("src/test/scripts/prepared.json").text
-String json = prep.execute(prepped)
-println groovy.json.JsonOutput.prettyPrint(json)
+// Create clients for the services we will use.
+prep = makeService('PrepareData')
+tokenizer = makeService('Tokenizer')
+annotator = makeService('NGramAnnotator')
+scorer = makeService('NGramScorer')
+ranker = makeService('Ranker')
+eval = makeService('Evaluator')
+extract = makeService('RankingExtractor')
+dataExtractor = makeService('DataExtractor')
+
+// One time set up services.
+String json = prep.execute(input)
+
+// Run the services through the parameter space matrix
+[1, 2, 3, -1].each { n ->
+    ['UNIGRAM', 'BIGRAM', 'TRIGRAM'].each { type ->
+        run(json, type, n)
+    }
+}
 return
 
+void run(String json, String type, int n) {
+    // Set the parameters for this run.
+    Data data = Serializer.parse(json, Data)
+    data.parameters = [:]
+    data.parameters.type = type
+    data.parameters.n = n
+    // Execute all the services.
+    json = tokenizer.execute(data.asJson())
+    json = annotator.execute(json)
+    json = scorer.execute(json)
+    json = ranker.execute(json)
+    json = eval.execute(json)
+    // Extract and print the results to System.out
+    println dataExtractor.execute(json)
+    //println extract.execute(json)
+}
+
+String parameter(String json, String name, def value) {
+    DataContainer data = Serializer.parse(json, DataContainer)
+    if (data.parameters == null) {
+        data.parameters = [:]
+    }
+    data.parameters[name] = value
+    return data.asJson()
+}
 
 

@@ -21,7 +21,7 @@
     <bean id="target" class="jp.go.nict.langrid.servicecontainer.handler.TargetServiceFactory" >
         <property name="service">
             <!-- This is the ONLY thing that should be changed. -->
-            <bean class="edu.cmu.cs.lti.deiis.scoring.Ranker" />
+            <bean class="edu.cmu.cs.lti.deiis.extractors.DataExtractor" />
         </property>
     </bean>
 </beans>

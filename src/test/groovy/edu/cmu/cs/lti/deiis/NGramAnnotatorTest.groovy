@@ -17,31 +17,39 @@
 
 package edu.cmu.cs.lti.deiis
 
-import edu.cmu.cs.lti.deiis.annotators.NGramAnnotator
-import edu.cmu.cs.lti.deiis.annotators.PrepareData
-import edu.cmu.cs.lti.deiis.annotators.Tokenizer
-import org.junit.After
-import org.junit.Before
+import edu.cmu.cs.lti.deiis.annotators.*
 import org.junit.Test
-import org.lappsgrid.api.WebService
 import org.lappsgrid.serialization.Data
+import org.lappsgrid.serialization.DataContainer
 import org.lappsgrid.serialization.Serializer
+import org.lappsgrid.serialization.lif.Container
 
-import static org.lappsgrid.discriminator.Discriminators.*
+import static org.junit.Assert.*
+
 
 /**
  * @author Keith Suderman
  */
-class BigramAnnotatorTest {
+class NGramAnnotatorTest {
 
     @Test
-    void testBigram() {
-        String text = this.class.getResourceAsStream("/booth.txt").text
-        Data data = new Data(Uri.TEXT, text)
-        String json = new PrepareData().execute(data.asJson())
+    void parameterTest() {
+        String text = '''Q What is the meaning of life?
+A 1 42.
+A 0 Money and power.
+'''
+        String json = new PrepareData().execute(text)
         json = new Tokenizer().execute(json)
-        json = new NGramAnnotator(2).execute(json)
-        data = Serializer.parse(json, Data)
-        println data.asPrettyJson()
+
+        Data d = Serializer.parse(json)
+        if (d.parameters == null) {
+            d.parameters = [:]
+        }
+        d.parameters['type'] = 'BIGRAM'
+        json = new NGramAnnotator().execute(d.asJson())
+        d = Serializer.parse(json, DataContainer)
+        println d.asPrettyJson()
+
     }
+
 }

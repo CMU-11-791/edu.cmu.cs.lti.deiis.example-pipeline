@@ -1,0 +1,61 @@
+#!/usr/bin/env lsd
+
+boolean verbose = args[0] == 'v' || args[0] == '-verbose'
+
+args.each { println it }
+
+if (verbose) {
+	println "Verbose mode"
+}
+else {
+	println "Silent mode."
+}
+
+// The base URL for all services running locally.
+String base = "http://localhost:8080/example-pipeline/services"
+
+def pipeline = []
+// The services to be run in order they are to be executed.
+String serviceList = 'PrepareData Tokenizer NGramAnnotator NGramScorer Ranker Evaluator RankingExtractor'
+serviceList.split(' ').each { name ->
+	pipeline.add(new ServiceClient("$base/$name"))
+}
+// Add the SetParameter service as the second service to be executed.
+pipeline.add(1, new SetParameters())
+
+// Load the test data and run it through the pipeline!
+String input = new File("src/main/resources/booth.txt").text
+pipeline.each { service ->
+	println "Running ${service.class.name}"
+	input = service.execute(input) 
+	if (verbose) {
+		println groovy.json.JsonOutput.prettyPrint(input)
+		println()
+	}
+}
+
+println input
+println "Done"
+return
+
+class SetParameters implements WebService {
+	String getMetadata() {
+		ServiceMetadata md = new ServiceMetadataBuilder()
+			.name(this.class.name)
+			.version('1.0.0')
+			.description('Sets parameters in the Data object for the NGram tagger, scorer and Ranker')
+			.requireFormat(Uri.LIF)
+			.produceFormat(Uri.LIF)
+			.build()
+		return new Data(Uri.META, md).asPrettyJson()
+	}
+	
+	String execute(String input) {
+		Data data = Serializer.parse(input, Data)
+		data.parameters = [:]
+		data.parameters.type = 'BIGRAM'
+		data.parameters.feature = 'score'
+		return data.asJson()
+	}
+}
+

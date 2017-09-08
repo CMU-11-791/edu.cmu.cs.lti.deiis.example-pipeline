@@ -1,6 +1,23 @@
+/*
+ * Copyright (c) 2017. Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package edu.cmu.cs.lti.deiis.scoring
 
-import edu.cmu.cs.lti.deiis.annotators.AbstractAnnotator
+import edu.cmu.cs.lti.deiis.annotators.AbstractService
 import edu.cmu.cs.lti.deiis.model.Features
 import edu.cmu.cs.lti.deiis.model.Types
 import groovy.util.logging.Slf4j
@@ -22,10 +39,9 @@ import static org.lappsgrid.discriminator.Discriminators.*
  *     Ranker
  * </code>
  *
- * @author Keith Suderman
  */
 @Slf4j('logger')
-class Ranker extends AbstractAnnotator {
+class Ranker extends AbstractService {
 
     /**
      * The feature to sort on.
@@ -42,8 +58,9 @@ class Ranker extends AbstractAnnotator {
     }
 
     protected ServiceMetadataBuilder configure(ServiceMetadataBuilder builder) {
-        builder.name(this.class.name)
-        return builder
+        return builder.name(this.class.name)
+            .require(Types.SCORE)
+            .produce(Types.RANK)
     }
 
     String execute(String input) {
@@ -78,8 +95,10 @@ class Ranker extends AbstractAnnotator {
         }
         StringWriter stringWriter = new StringWriter()
         PrintWriter writer = new PrintWriter(stringWriter)
-        answers.sort { it.features[feature] ?: 0 }.reverse().each { answer ->
-            logger.debug("Writing answer {}", answer.id)
+        logger.debug("Sorting by feature {}", feature)
+        answers.sort { it.features[feature] }.reverse().eachWithIndex { answer, i ->
+            logger.info("Ranked: {} is answer {}", answer.id, answer.features.isAnswer)
+            answer.features.rank = i + 1
             if (answer.features.isAnswer) {
                 writer.print '1 '
             }
@@ -91,9 +110,12 @@ class Ranker extends AbstractAnnotator {
             writer.print ' '
             writer.println answer.features.text
         }
-//        data.discriminator = Types.LAPPS
-//        data.payload = stringWriter.toString()
-//        return data.asPrettyJson()
-        return stringWriter.toString()
+
+        if (container.metadata == null) {
+            container.metadata = [:]
+        }
+        container.metadata.ranking = stringWriter.toString()
+        data.payload = container
+        return data.asPrettyJson()
     }
 }

@@ -66,7 +66,7 @@ class MetadataTest {
     ServiceMetadata getMetadata(Class<? extends WebService> aClass) {
         WebService service = (WebService) aClass.newInstance()
         String json = service.getMetadata()
-        Data data = Serializer.parse(json)
+        Data data = Serializer.parse(json, Data)
         return new ServiceMetadata((Map) data.payload)
     }
 }

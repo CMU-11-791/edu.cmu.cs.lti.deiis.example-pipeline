@@ -1,16 +1,5 @@
 #!/usr/bin/env lsd
 
-boolean verbose = args[0] == 'v' || args[0] == '-verbose'
-
-args.each { println it }
-
-if (verbose) {
-	println "Verbose mode"
-}
-else {
-	println "Silent mode."
-}
-
 // The base URL for all services running locally.
 String base = "http://localhost:8080/example-pipeline/services"
 
@@ -20,10 +9,11 @@ String serviceList = 'PrepareData Tokenizer NGramAnnotator NGramScorer Ranker Ev
 serviceList.split(' ').each { name ->
 	pipeline.add(new ServiceClient("$base/$name"))
 }
+
 // Add the SetParameter service as the second service to be executed.
 pipeline.add(1, new SetParameters())
 
-// Load the test data and run it through the pipeline!
+// Load the test data and run it through the pipeline.
 String input = new File("src/main/resources/booth.txt").text
 pipeline.each { service ->
 	println "Running ${service.class.name}"

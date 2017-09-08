@@ -18,16 +18,14 @@ String input = new File("src/main/resources/booth.txt").text
 pipeline.each { service ->
 	println "Running ${service.class.name}"
 	input = service.execute(input) 
-	if (verbose) {
-		println groovy.json.JsonOutput.prettyPrint(input)
-		println()
-	}
 }
 
 println input
 println "Done"
 return
 
+// Sets the parameters used by the BigramAnnotator, BigramScorer, and Ranker
+// services.
 class SetParameters implements WebService {
 	String getMetadata() {
 		ServiceMetadata md = new ServiceMetadataBuilder()
